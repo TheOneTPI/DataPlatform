@@ -110,9 +110,14 @@ Create ingress to allow accessing the console for operator and also for tenant.
 kubectl apply -f ./minio/ingress_services.yaml
 ```
 
-### Create buckets in tenant
+### Create buckets & access key in tenant
 Create 2 buckets in tenant using the web console.
 
+<img src="/asset/minio_buckets.png" alt="Buckets" style="width:500px;"/>
+
+Create an access key for Trino and HMS.
+
+<img src="/asset/minio_accesskey.png" alt="Access Key" style="width:700px;"/>
 
 ## Database PostgreSQL - Test
 
@@ -167,10 +172,24 @@ kubectl apply -n hms -f ./hms/postgresql_hms_nodeport.yaml
 ```
 
 ### Deploy HMS instance
-I create a Helm chart for HMS using the docker image and also add the environment variables to interface HMS with S3 bucket and PostgreSQL
+I create a Helm chart for HMS using the docker image and also add the environment variables to interface HMS with S3 bucket and PostgreSQL into a specific yaml values.
 
+```shell
+helm install -n hms my-hms ./hms/hms_helm/ -f ./hms/values_hms.yaml
+```
 
 ## SQL engine - Trino
+The values file `./trino/trino_values.yaml` contains many informations like RAM for worker or JVM (be sure that JVM memory doesn't exceed the Worker/Coordinator memory) and also connections (named catalogs in trino). 
 
+```shell
+helm install -n trino my-trino-cluster trino/trino -f ./trino/trino_values.yaml
+```
+
+You now can use trino throw DBeaver using the url in `ingress` value.
+<img src="/asset/trino_dbeaver.png" alt="Access Key" style="width:300px;"/>
+
+The url can be used in your browser to access the web ui, it's only contains monitoring informations like "workers on", "sql requests failed", "sql requests running", etc...
+> :memo: At this point there is no user/passwork for trino webui so you can connect using any user as you want.
+<img src="/asset/trino_webui.png" alt="Access Key" style="width:700px;"/>
 
 ## Benchmark
