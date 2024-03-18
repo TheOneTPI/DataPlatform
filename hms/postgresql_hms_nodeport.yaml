@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-hms-nodeport
+  labels:
+    name: postgresql-hms-nodeport
+spec:
+  type: NodePort
+  ports:
+    - port: 5432
+      nodePort: 31450
+  selector:
+    app.kubernetes.io/name: pg-hms

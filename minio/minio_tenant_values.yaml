@@ -1,0 +1,88 @@
+###
+# Root key for dynamically creating a secret for use with configuring root MinIO User
+# Specify the ``name`` and then a list of environment variables. 
+#
+# .. important::
+#
+#    Do not use this in production environments. 
+#    This field is intended for use with rapid development or testing only.
+# 
+# For example:
+#
+# .. code-block:: yaml
+#
+#    name: myminio-env-configuration
+#    accessKey: minio
+#    secretKey: minio123
+#
+secrets:
+  name: iceberg-storage-env-configuration
+  accessKey: minio-iceberg 
+  secretKey: minio123
+  ###
+  # The name of an existing Kubernetes secret to import to the MinIO Tenant
+  # The secret must contain a key ``config.env``.
+  # The values should be a series of export statements to set environment variables for the Tenant.
+  # For example:
+  #
+  # .. code-block:: shell
+  #
+  #    stringData:
+  #       config.env: | -
+  #         export MINIO_ROOT_USER=ROOTUSERNAME
+  #         export MINIO_ROOT_PASSWORD=ROOTUSERPASSWORD
+  #
+  #existingSecret:
+  #  name: myminio-env-configuration
+###
+# Root key for MinIO Tenant Chart
+tenant:
+  ###
+  # The Tenant name
+  #
+  # Change this to match your preferred MinIO Tenant name.
+  name: iceberg-storage
+  ###
+  # The Kubernetes secret name that contains MinIO environment variable configurations.
+  # The secret is expected to have a key named config.env containing environment variables exports.
+  configuration:
+    name: iceberg-storage-env-configuration
+  ###
+  # Top level key for configuring MinIO Pool(s) in this Tenant.
+  #
+  # See `Operator CRD: Pools <https://min.io/docs/minio/kubernetes/upstream/reference/operator-crd.html#pool>`__ for more information on all subfields.
+  pools:
+    ###
+    # The number of MinIO Tenant Pods / Servers in this pool.
+    # For standalone mode, supply 1. For distributed mode, supply 4 or more.
+    # Note that the operator does not support upgrading from standalone to distributed mode.
+    - servers: 1
+      ###
+      # Custom name for the pool
+      name: pool-0
+      ###
+      # The number of volumes attached per MinIO Tenant Pod / Server.
+      volumesPerServer: 1
+      ###
+      # The capacity per volume requested per MinIO Tenant Pod.
+      size: 250Gi
+  certificate:
+    requestAutoCert: false
+###
+# Configures `Ingress <https://kubernetes.io/docs/concepts/services-networking/ingress/>`__ for the Tenant S3 API and Console.
+#
+# Set the keys to conform to the Ingress controller and configuration of your choice.
+# MUST BE CREATE MANUALLY AFTER
+ingress:
+  api:
+    enabled: false
+    ingressClassName: "nginx"
+    host: mykubeminio-iceberg.tpi.com
+    path: /
+    pathType: Prefix
+  console:
+    enabled: false
+    ingressClassName: "nginx"
+    host: mykubeminio-iceberg-console.tpi.com
+    path: /
+    pathType: Prefix

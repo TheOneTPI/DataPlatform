@@ -1,0 +1,33 @@
+# Copyright VMware, Inc.
+# SPDX-License-Identifier: APACHE-2.0
+
+## @section Global parameters
+## Please, note that this will override the parameters, including dependencies, configured to use the global value
+##
+global:
+  ## @param global.storageClass Global StorageClass for Persistent Volume(s)
+  ##
+  storageClass: "standard"
+  postgresql:
+    ## @param global.postgresql.auth.postgresPassword Password for the "postgres" admin user (overrides `auth.postgresPassword`)
+    ## @param global.postgresql.auth.username Name for a custom user to create (overrides `auth.username`)
+    ## @param global.postgresql.auth.password Password for the custom user to create (overrides `auth.password`)
+    ## @param global.postgresql.auth.database Name for a custom database to create (overrides `auth.database`)
+    ## @param global.postgresql.auth.existingSecret Name of existing secret to use for PostgreSQL credentials (overrides `auth.existingSecret`).
+    ## @param global.postgresql.auth.secretKeys.adminPasswordKey Name of key in existing secret to use for PostgreSQL credentials (overrides `auth.secretKeys.adminPasswordKey`). Only used when `global.postgresql.auth.existingSecret` is set.
+    ## @param global.postgresql.auth.secretKeys.userPasswordKey Name of key in existing secret to use for PostgreSQL credentials (overrides `auth.secretKeys.userPasswordKey`). Only used when `global.postgresql.auth.existingSecret` is set.
+    ## @param global.postgresql.auth.secretKeys.replicationPasswordKey Name of key in existing secret to use for PostgreSQL credentials (overrides `auth.secretKeys.replicationPasswordKey`). Only used when `global.postgresql.auth.existingSecret` is set.
+    ##
+    auth:
+      existingSecret: "postgresql-test-secret"
+      secretKeys:
+        adminPasswordKey: "pgadminpassword"
+        userPasswordKey: "pgpassword"
+        replicationPasswordKey: "pgreplpassword"
+## @param nameOverride String to partially override common.names.fullname template (will maintain the release name)
+##
+nameOverride: "pg-test"
+
+primary:
+  persistence:
+    size: 100Gi

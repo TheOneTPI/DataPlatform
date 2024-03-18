@@ -1,0 +1,10 @@
+###
+# Root key for Operator Console
+console:
+  ingress:
+    enabled: true
+    ingressClassName: "nginx"
+    host: mykubeminio-operator.tpi.com
+    path: /
+    pathType: Prefix
+

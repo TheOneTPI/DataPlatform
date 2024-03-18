@@ -1,0 +1,64 @@
+server:
+  workers: 2
+  node:
+    environment: prototype
+  log:
+    trino:
+      level: INFO
+  config:
+    # Trino supports multiple authentication types: PASSWORD, CERTIFICATE, OAUTH2, JWT, KERBEROS
+    # For more info: https://trino.io/docs/current/security/authentication-types.html
+    query:
+      maxMemory: "3GB"
+      maxMemoryPerNode: "1GB"
+    memory:
+      heapHeadroomPerNode: "1GB"
+
+additionalCatalogs: 
+  postgres_test: |-
+    connector.name=postgresql
+    connection-url=jdbc:postgresql://my-postgres-test-pg-test.postgres-test:5432/postgres
+    connection-user=postgres
+    connection-password=f2F7uQe8S8t6xbwDH96Y
+  postgres_hms: |-
+    connector.name=postgresql
+    connection-url=jdbc:postgresql://my-postgres-hms-pg-hms.hms:5432/postgres
+    connection-user=postgres
+    connection-password=pxJ9Pl03ZMZGwaXI
+  iceberg_test: |-
+    connector.name=iceberg
+    iceberg.catalog.type=hive_metastore
+    hive.metastore.uri=thrift://my-hms.hms:9083
+    fs.native-s3.enabled=true
+    s3.endpoint=http://iceberg-storage-hl.minio-iceberg:9000
+    s3.region=us-east-1
+    s3.aws-access-key=XpVtRFzBR1alEMoHQpzl
+    s3.aws-secret-key=kECKgqgT5ZJeHsQowfjvqAbHpHp1zg00NthC5YYf
+    s3.path-style-access=true
+    iceberg.file-format=PARQUET
+    iceberg.unique-table-location=false
+
+coordinator:
+  jvm:
+    maxHeapSize: "4G"
+    gcMethod:
+      type: "UseG1GC"
+      g1:
+        heapRegionSize: "32M"
+
+worker:
+  jvm:
+    maxHeapSize: "4G"
+    gcMethod:
+      type: "UseG1GC"
+      g1:
+        heapRegionSize: "32M"
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: mytrino.tpi.com
+      paths:
+      - path: /
+        pathType: Prefix
