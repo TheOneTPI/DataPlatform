@@ -13,11 +13,11 @@ Table format --> Iceberg : https://iceberg.apache.org/
 Metastore for Iceberg --> Hive Metastore Service (HMS) : https://hive.apache.org/
 
 # Table of Contents
-1. [General information](#general)
-2. [Object storage - Minio](#minio)
+1. [General information](#General-information)
+2. [Object storage - Minio](#Object-storage---Minio)
 
 
-## General information<a name="general"></a>
+## General information
 
 All of this work has been deployed on a development Kubernetes engine (minikube) with a single node.
 
