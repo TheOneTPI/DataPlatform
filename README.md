@@ -15,6 +15,10 @@ Metastore for Iceberg --> Hive Metastore Service (HMS) : https://hive.apache.org
 # Table of Contents
 1. [General information](#General-information)
 2. [Object storage - Minio](#Object-storage---Minio)
+3. [Database PostgreSQL - Test](#Database-PostgreSQL---Test)
+4. [Metastore for Iceberg - HMS](#Metastore-for-Iceberg---HMS)
+5. [SQL engine - Trino](#SQL-engine---Trino)
+6. [Benchmark](#Benchmark)
 
 
 ## General information
@@ -61,4 +65,12 @@ The deployment creates an ingress with hostname `myrancher.tpi.com`. At this mom
 
 At the first connection the bootstrap password will be asked and you will be able to change to another great passwork as you like ;-).
 
-## Object storage - Minio<a name="minio"></a>
+## Object storage - Minio
+
+## Database PostgreSQL - Test
+
+## Metastore for Iceberg - HMS
+
+## SQL engine - Trino
+
+## Benchmark
