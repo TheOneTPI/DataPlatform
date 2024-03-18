@@ -1,4 +1,4 @@
-FROM openjdk:16-slim
+FROM openjdk:23-slim
 
 # see https://hadoop.apache.org/releases.html
 ARG HADOOP_VERSION=3.3.6
