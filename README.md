@@ -186,10 +186,19 @@ helm install -n trino my-trino-cluster trino/trino -f ./trino/trino_values.yaml
 ```
 
 You now can use trino throw DBeaver using the url in `ingress` value.
+
 <img src="/asset/trino_dbeaver.png" alt="Access Key" style="width:300px;"/>
 
 The url can be used in your browser to access the web ui, it's only contains monitoring informations like "workers on", "sql requests failed", "sql requests running", etc...
 > :memo: At this point there is no user/passwork for trino webui so you can connect using any user as you want.
-<img src="/asset/trino_webui.png" alt="Access Key" style="width:700px;"/>
+
+<img src="/asset/trino_webui.png" alt="Access Key" style="width:800px;"/>
 
 ## Benchmark
+Trino comes with some usefull tools to benchmark the solution "tpcds" https://www.tpc.org/tpcds/ . We use it to store same data into PostgreSQL and S3 with Iceberg. And then we perform some SQL request on PostgreSQL directly, on PostgreSQL using Trino and on Iceberg using Trino
+
+Results :
+
+| Request ID | Summary | PostgreSQL | PostgreSQL over Trino | Iceberg over Trino |
+| ---------- | ------- | ---------- | --------------------- | ----------------- |
+| 001 | Agregate 150M rows of sales by year | 2 min 25s | 1 min 38s | 4s |
