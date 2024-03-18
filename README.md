@@ -92,15 +92,27 @@ kubectl create namespace trino
 
 I use Minio kubernetes operator to administrate Minio. The `minio_operator_values.yaml` contains only ingress.
 
+### Deploy operator
 ```shell
 helm install -n minio minio-operator minio/operator -f ./minio/minio_operator_values.yaml
 ```
 
+### Deploy tenant
 Then I create a tenant to store buckets.  The `minio_tenant_values.yaml` contains only needed configuration for prototype environment like `volumesPerServer` or `size`, etc...
 
 ```shell
 helm install -n minio-iceberg minio-tenant minio/tenant -f ./minio/minio_tenant_values.yaml
 ```
+
+### Deploy ingress
+Create ingress to allow accessing the console for operator and also for tenant.
+```shell
+kubectl apply -f ./minio/ingress_services.yaml
+```
+
+### Create buckets in tenant
+Create 2 buckets in tenant using the web console.
+
 
 ## Database PostgreSQL - Test
 
@@ -117,15 +129,15 @@ helm install -n postgres-test my-postgres-test oci://registry-1.docker.io/bitnam
 ```
 
 3) Create a node port service.
-> :memo: This one can be usefull to browse the instance using DBeaver for example
+> :memo: This one can be usefull to browse the instance using DBeaver for example.
 ```shell
 kubectl apply -n postgres-test -f ./postgresql_test/postgresql_test_nodeport.yaml
 ```
-If you want to access the node port in WSL2, you need to create a port forward
+If you want to access the node port in WSL2, you need to create a port forward.
 ```shell
 minikube service -n postgres-test postgresql-test-nodeport
 ```
-> :memo: Note the port number to use it into DBeaver with `localhost`
+> :memo: Note the port number to use it into DBeaver with `localhost`.
 
 ## Metastore for Iceberg - HMS
 
@@ -133,9 +145,32 @@ minikube service -n postgres-test postgresql-test-nodeport
 For Hive Metastore we need to create the docker image using a dockerfile. The dockerfile contains binaries for HMS and also a copy of `run.sh`. This script uses environment variables and creates configuration for HMS when the image starts.
 
 ```shell
+# docker build
 docker build ./hms/create_image/ -t tpipino/hms:latest
+
+# push to docker hub (replace with your repo)
+docker push tpipino/hms:latest
 ```
 
+### Deploy PostgreSQL instance
+HMS needs a storage to kept informations for table schema like columns, statistics, format, etc...
+We deploy it like the PostgreSQL test instance.
+```shell
+# secret
+kubectl apply --namespace hms -f ./hms/postgresql_hms_secret.yaml
+
+# deploy
+helm install -n hms my-postgres-hms oci://registry-1.docker.io/bitnamicharts/postgresql -f ./hms/values_pg_hms.yaml
+
+# nodeport
+kubectl apply -n hms -f ./hms/postgresql_hms_nodeport.yaml
+```
+
+### Deploy HMS instance
+I create a Helm chart for HMS using the docker image and also add the environment variables to interface HMS with S3 bucket and PostgreSQL
+
+
 ## SQL engine - Trino
+
 
 ## Benchmark
