@@ -92,9 +92,14 @@ kubectl create namespace trino
 
 I use Minio kubernetes operator to administrate Minio. The `minio_operator_values.yaml` contains only ingress.
 
+### Add repo to helm
+```shell
+helm repo add minio-operator https://operator.min.io
+```
+
 ### Deploy operator
 ```shell
-helm install -n minio minio-operator minio/operator -f ./minio/minio_operator_values.yaml
+helm install -n minio-operator minio-operator minio/operator -f ./minio/minio_operator_values.yaml
 ```
 
 ### Deploy tenant
