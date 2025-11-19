@@ -1,0 +1,145 @@
+# Default values for Apache Ranger.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+rangerAdmin:
+  image:
+    repository: tpipino/ranger # docker image repository for Ranger Admin
+    tag: 2.5.0 # docker image tag for Ranger Admin
+    pullPolicy: Always # Kubernetes image policy for Ranger Admin
+    
+  installPropertiesPath: "/opt/ranger/admin/install_prop/install.properties" # `install.properties` file path for Ranger Admin 
+  installPropertiesSecret: "ranger-admin-secret" # secret to use for `install.properties` file in Ranger Admin
+  installPropertiesPathUserSync: "/opt/ranger/usersync/install_prop/install.properties" # `install.properties` file path for Ranger usersync 
+  installPropertiesSecretUserSync: "ranger-us-secret" # secret to use for `install.properties` file in Ranger usersync
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 4
+      memory: 6Gi
+  
+  env: [] # environment variables to be use for Ranger Admin
+  
+  envFrom: [] # environment variables derived from secrets or configmap to be use for Ranger Admin
+  
+  nodeSelector: {} # node selector for Ranger Admin
+  
+  tolerations: [] # tolerations for Ranger Admin
+  
+  affinity: {} # affinity for Ranger Admin
+  
+  annotations: {} # annotations for Ranger Admin
+  
+  securityContext:
+    runAsUser: 0 # docker user code for Ranger Admin
+    runAsGroup: 0 # docker user group for Ranger admin
+  
+rangerUsersync:
+  enabled: false # enable Ranger Usersync
+  image:
+    repository:  # docker image repository for Ranger Usersync
+    tag: 3.0.0-SNAPSHOT # docker image tag for Ranger Usersync
+    pullPolicy: IfNotPresent # docker image tag for Ranger Usersync
+    
+  installPropertiesPath: /opt/ranger/usersync/install.properties # resource limits and requests for Ranger Usersync
+  installPropertiesSecret: "" # secret to use for `install.properties` file in Ranger Usersync
+  
+  resources: {} # resource limits and requests for Ranger Usersync
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+    
+  env: [] # environment variables to be use for Ranger Usersync
+  
+  envFrom: [] # environment variables derived from secrets or configmap to be use for Ranger Usersync
+  
+  nodeSelector: {} # node selector for Ranger Usersync
+  
+  tolerations: [] # tolerations for Ranger Usersync
+  
+  affinity: {} # affinity for Ranger Usersync
+  
+  annotations: {} # annotations for Ranger Usersync
+  
+rangerAuthorizationMatrix:
+  enabled: false # enable Ranger Authorization Matrix
+  image: 
+    repository:  # docker image repository for Ranger Authrorization Matrix
+    tag: latest # docker image tag for Ranger Authrorization Matrix
+    pullPolicy: IfNotPresent # docker image tag for Ranger Authrorization Matrix
+    
+  nodeSelector: {} # node selector for Ranger Authrorization Matrix
+  
+  tolerations: [] # tolerations for Ranger Authrorization Matrix
+  
+  affinity: {} # affinity for Ranger Authrorization Matrix
+  
+  annotations: {} # annotations for Ranger Authrorization Matrix
+  
+  startupProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 15
+    timeoutSeconds: 1
+    failureThreshold: 60
+    periodSeconds: 5
+    successThreshold: 1
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 15
+    timeoutSeconds: 1
+    failureThreshold: 3
+    periodSeconds: 300
+    successThreshold: 1
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 15
+    timeoutSeconds: 1
+    failureThreshold: 3
+    periodSeconds: 300
+    successThreshold: 1
+    
+service:
+  rangerAdmin:
+    type: ClusterIP # Ranger Admin service type, could be `ClusterIP`, `LoadBalancer`, `NodePort`
+    port: 6080 # Ranger Admin port to be served
+    annotations: {} # Ranger Admin annotations for service
+  rangerAuthorizationMatrix:
+    type: ClusterIP # Ranger Authorization Matrix service type, could be `ClusterIP`, `LoadBalancer`, `NodePort`
+    port: 8080 # Ranger Authorization Matrix port to be served
+    annotations: {} # Ranger Authorization Matrix annotations for service
+
+ingress:
+  rangerAdmin:
+    enabled: true # enable the ingress
+    className: 'nginx' # ingress classname, could be `alb`
+    annotations: {} # ingress annotation
+    hosts: 
+      - host: myranger.tpi.com
+        paths:
+        - path: /
+          pathType: Prefix # hostnames for ingresses and which service paths they should map to
+  rangerAuthorizationMatrix:
+    enabled: false # enable the ingress
+    className: alb # ingress classname, could be `alb`
+    annotations: {} # ingress annotation
+    hosts: [] # hostnames for ingresses and which service paths they should map to
+    #  - host: ranger-authorization-matrix.example.com
+    #    paths:
+    #      - path: /
+    #        pathType: ImplementationSpecific

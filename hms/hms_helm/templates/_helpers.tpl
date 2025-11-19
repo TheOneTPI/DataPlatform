@@ -60,3 +60,21 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Create env variable from secret or normal
+*/}}
+{{- define "hms_helm.list-env-variables"}}
+{{ $secretname := .Values.secret.name }}
+{{- range $key, $val := .Values.env.secret }}
+- name: {{ $key }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretname }}
+      key: {{ $key }}
+{{- end }}
+{{- range $key, $val := .Values.env.normal }}
+- name: {{ $key }}
+  value: {{ $val | quote }}
+{{- end }}
+{{- end }}

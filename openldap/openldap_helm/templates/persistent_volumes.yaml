@@ -1,0 +1,26 @@
+{{- if .Values.volume.enabled }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ .Values.volume.name }}
+  labels:
+    app: {{ template "openldap_helm.fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+  annotations:
+    volumeType: local
+spec:
+  accessModes:
+    - {{ .Values.volume.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.volume.size | quote }}
+{{- if .Values.volume.storageClass }}
+{{- if (eq "-" .Values.volume.storageClass) }}
+  storageClassName: ""
+{{- else }}
+  storageClassName: "{{ .Values.volume.storageClass }}"
+{{- end }}
+{{- end }}
+{{- end }}

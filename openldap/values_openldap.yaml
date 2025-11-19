@@ -1,0 +1,49 @@
+# Default values for hms_helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: bitnami/openldap
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: 2.5.18-debian-12-r9
+
+nameOverride: "openldap"
+
+livenessProbe:
+
+readinessProbe:
+
+service:
+  type: ClusterIP
+  ports: 
+    # first ldap
+    - port: 1389
+    # second ldaps
+    - port: 1636
+
+volumeMount:
+  name: openldap-data
+  mountPath: "/bitnami/openldap"
+
+volume:
+  enabled: true
+  name: openldap-data
+  size: "1Gi"
+  accessMode: ReadWriteOnce
+  storageClass: local-path
+
+secret:
+  name: "openldap-secret"
+
+env:
+  normal:
+    LDAP_ROOT: "dc=dataplatform,dc=org"
+    LDAP_USERS: "us-cust01"
+    LDAP_GROUP: "gr-default"
+  secret:
+    LDAP_ADMIN_USERNAME: "admin"
+    LDAP_ADMIN_PASSWORD: "adminpassword"
+    LDAP_PASSWORDS: "pwd-cust01"

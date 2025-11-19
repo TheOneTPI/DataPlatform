@@ -8,8 +8,8 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: http
+      targetPort: 9083
       protocol: TCP
-      name: http
+      name: hms
   selector:
     {{- include "hms_helm.selectorLabels" . | nindent 4 }}

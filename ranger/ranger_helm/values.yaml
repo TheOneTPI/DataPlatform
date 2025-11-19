@@ -1,0 +1,59 @@
+# Default values for Apache Ranger.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+rangerAdmin:
+  image:
+    repository:  # docker image repository for Ranger Admin
+    tag: 2.5.0 # docker image tag for Ranger Admin
+    pullPolicy: IfNotPresent # Kubernetes image policy for Ranger Admin
+    
+  installPropertiesPath: /opt/ranger/admin/install.properties # `install.properties` file path for Ranger Admin 
+  installPropertiesSecret: "" # secret to use for `install.properties` file in Ranger Admin
+  installPropertiesPathUserSync: "/opt/ranger/usersync/install.properties" # `install.properties` file path for Ranger usersync 
+  installPropertiesSecretUserSync: "" # secret to use for `install.properties` file in Ranger usersync
+  
+  resources: {} # resource limits and requests for Ranger Admin
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+  
+  env: [] # environment variables to be use for Ranger Admin
+  
+  envFrom: [] # environment variables derived from secrets or configmap to be use for Ranger Admin
+  
+  nodeSelector: {} # node selector for Ranger Admin
+  
+  tolerations: [] # tolerations for Ranger Admin
+  
+  affinity: {} # affinity for Ranger Admin
+  
+  annotations: {} # annotations for Ranger Admin
+  
+  securityContext:
+    runAsUser: 0 # docker user code for Ranger Admin
+    runAsGroup: 0 # docker user group for Ranger admin
+
+service:
+  rangerAdmin:
+    type: ClusterIP # Ranger Admin service type, could be `ClusterIP`, `LoadBalancer`, `NodePort`
+    port: 6080 # Ranger Admin port to be served
+    annotations: {} # Ranger Admin annotations for service
+
+ingress:
+  rangerAdmin:
+    enabled: false # enable the ingress
+    className: alb # ingress classname, could be `alb`
+    annotations: {} # ingress annotation
+    hosts: [] # hostnames for ingresses and which service paths they should map to
+    #  - host: ranger.example.com
+    #    paths:
+    #      - path: /
+    #        pathType: ImplementationSpecific

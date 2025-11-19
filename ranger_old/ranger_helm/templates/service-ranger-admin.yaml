@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-admin-svc
+  labels:
+    app: apache-ranger
+    chart: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+  annotations:
+{{ toYaml .Values.service.rangerAdmin.annotations | indent 4 }}
+spec:
+  type: {{ .Values.service.rangerAdmin.type }}
+  ports:
+    - port: {{ .Values.service.rangerAdmin.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    {{- range $key, $value := .Values.rangerAdmin.additionalExposedPorts }}
+    - port: {{ $value.servicePort }}
+      name: {{ $value.name }}
+      targetPort: {{ $value.port }}
+      protocol: {{ $value.protocol }}
+    {{- end }}
+  selector:
+    app: apache-ranger
+    release: {{ .Release.Name }}
+    component: apache-ranger-admin

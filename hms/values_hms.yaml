@@ -13,41 +13,25 @@ image:
 nameOverride: "hms"
 
 service:
-  type: ClusterIP
+  type: NodePort
   port: 9083
 
 livenessProbe:
 
 readinessProbe:
 
-ingress:
-  enabled: true
-  className: nginx
-  hosts:
-    - host: myhms.tpi.com
-      paths:
-        - path: /
-          pathType: Prefix
+secret:
+  name: "hms-secret"
 
-envVar:
-  - name: DATABASE_HOST
-    value: "my-postgres-hms-pg-hms.hms"
-  - name: DATABASE_DB
-    value: "postgres"
-  - name: DATABASE_USER
-    value: "postgres"
-  - name: DATABASE_PASSWORD
-    value: "pxJ9Pl03ZMZGwaXI"
-  - name: AWS_ACCESS_KEY_ID
-    #value: ""
-    value: "XpVtRFzBR1alEMoHQpzl"
-  - name: AWS_SECRET_ACCESS_KEY
-    #value: ""
-    value: "kECKgqgT5ZJeHsQowfjvqAbHpHp1zg00NthC5YYf"
-  - name: S3_ENDPOINT_URL
-    #value: ""
-    value: "http://iceberg-storage-hl.minio-iceberg:9000"
-  - name: S3_BUCKET
-    value: "hive"
-  - name: S3_PREFIX
-    value: "warehouse"
+env:
+  normal:
+    DATABASE_HOST: "my-postgres-hms-pg-hms.hms"
+    DATABASE_DB: "postgres"
+    S3_ENDPOINT_URL: "http://iceberg-storage-hl.minio-iceberg:9000"
+    S3_BUCKET: "hive"
+    S3_PREFIX: "warehouse"
+  secret:
+    DATABASE_USER: "postgres"
+    DATABASE_PASSWORD: "pxJ9Pl03ZMZGwaXI"
+    AWS_ACCESS_KEY: "sOmTvPqXnNI0lRkDsLN4"
+    AWS_SECRET_ACCESS_KEY: "YXyccWiY0v9I5GsyN6fK00auIuRNlj47OXD0fjcr"

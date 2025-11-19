@@ -31,16 +31,13 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ include "hms_helm.name" . }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env:
-            {{- range .Values.envVar }}
-            - name: {{ .name }}
-              value: {{ .value }}
-            {{- end }}
+          env: 
+            {{- include "hms_helm.list-env-variables" . | nindent 12 }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

@@ -1,3 +1,7 @@
+image:
+  tag: latest
+  pullPolicy: Always
+
 server:
   workers: 2
   node:
@@ -6,37 +10,69 @@ server:
     trino:
       level: INFO
   config:
-    # Trino supports multiple authentication types: PASSWORD, CERTIFICATE, OAUTH2, JWT, KERBEROS
-    # For more info: https://trino.io/docs/current/security/authentication-types.html
     query:
       maxMemory: "3GB"
       maxMemoryPerNode: "1GB"
     memory:
       heapHeadroomPerNode: "1GB"
+    authenticationType: "PASSWORD"  
+  coordinatorExtraConfig: |
+    http-server.authentication.allow-insecure-over-http=true
+  #  http-server.authentication.oauth2.scopes=openid
+  #  http-server.authentication.oauth2.client-id=trino
+  #  http-server.authentication.oauth2.client-secret=${KEYCLOAK_SECRET}
+  #  http-server.authentication.oauth2.issuer=http://mykeycloak.tpi.com/realms/DATAPLATFORM
+  #  http-server.authentication.oauth2.oidc.discovery=false
+  #  http-server.authentication.oauth2.token-url=http://mykeycloak.tpi.com/realms/DATAPLATFORM/protocol/openid-connect/token
+  #  http-server.authentication.oauth2.auth-url=http://mykeycloak.tpi.com/realms/DATAPLATFORM/protocol/openid-connect/auth
+  #  http-server.authentication.oauth2.jwks-url=http://mykeycloak.tpi.com/realms/DATAPLATFORM/protocol/openid-connect/certs
+  #  http-server.authentication.oauth2.userinfo-url=http://mykeycloak.tpi.com/realms/DATAPLATFORM/protocol/openid-connect/userinfo
+
+additionalConfigProperties:
+  - http-server.process-forwarded=true
+  - internal-communication.shared-secret=${COM_SHARED_SECRET}
+
+additionalAuthProperties:
+  - password-authenticator.name=ldap
+  - ldap.url=ldap://my-openldap.security-dataplatform:1389
+  - ldap.allow-insecure=true
+  # ldap.bind-dn=${LDAP_BIND_USER}
+  # ldap.bind-password=${LDAP_BIND_PW}
+  - ldap.user-base-dn=ou=users,dc=dataplatform,dc=org
+  - ldap.user-bind-pattern=cn=${USER},ou=users,dc=dataplatform,dc=org
+  - ldap.group-auth-pattern=(&(member=cn=${USER},ou=users,dc=dataplatform,dc=org)(cn=gr-trino))
+
+additionalLogProperties:
+  - io.trino.plugin.password=INFO
+  - io.trino=INFO
 
 additionalCatalogs: 
   postgres_test: |-
     connector.name=postgresql
     connection-url=jdbc:postgresql://my-postgres-test-pg-test.postgres-test:5432/postgres
-    connection-user=postgres
-    connection-password=f2F7uQe8S8t6xbwDH96Y
+    connection-user=${ENV:POSTGRES_TEST_USER}
+    connection-password=${ENV:POSTGRES_TEST_PASSWORD}
   postgres_hms: |-
     connector.name=postgresql
     connection-url=jdbc:postgresql://my-postgres-hms-pg-hms.hms:5432/postgres
-    connection-user=postgres
-    connection-password=pxJ9Pl03ZMZGwaXI
+    connection-user=${ENV:POSTGRES_HMS_USER}
+    connection-password=${ENV:POSTGRES_HMS_PASSWORD}
   iceberg_test: |-
     connector.name=iceberg
     iceberg.catalog.type=hive_metastore
-    hive.metastore.uri=thrift://my-hms.hms:9083
+    hive.metastore.uri=thrift://my-hms.hms:9083/
     fs.native-s3.enabled=true
     s3.endpoint=http://iceberg-storage-hl.minio-iceberg:9000
     s3.region=us-east-1
-    s3.aws-access-key=XpVtRFzBR1alEMoHQpzl
-    s3.aws-secret-key=kECKgqgT5ZJeHsQowfjvqAbHpHp1zg00NthC5YYf
+    s3.aws-access-key=${ENV:ICEBERG_S3_ACCESS_KEY}
+    s3.aws-secret-key=${ENV:ICEBERG_S3_SECRET_KEY}
     s3.path-style-access=true
     iceberg.file-format=PARQUET
     iceberg.unique-table-location=false
+
+envFrom:
+  - secretRef:
+      name: trino-secret
 
 coordinator:
   jvm:
@@ -45,6 +81,10 @@ coordinator:
       type: "UseG1GC"
       g1:
         heapRegionSize: "32M"
+  etcFiles:
+    properties:
+      password-authenticator.properties: |
+
 
 worker:
   jvm:
@@ -62,3 +102,8 @@ ingress:
       paths:
       - path: /
         pathType: Prefix
+  tls:
+    - secretName: my-trino-tls-secret
+      hosts:
+        - mytrino.tpi.com
+

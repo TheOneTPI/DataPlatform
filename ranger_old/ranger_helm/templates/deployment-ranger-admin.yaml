@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apache-ranger-admin
+  labels:
+    app: apache-ranger
+    chart: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+    component: apache-ranger-admin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apache-ranger
+      release: {{ .Release.Name }}
+      component: apache-ranger-admin
+  template:
+    metadata:
+      {{- if .Values.rangerAdmin.annotations }}
+      annotations:
+      {{- tpl (toYaml .Values.rangerAdmin.annotations) . | nindent 8 }}
+      {{- end }}
+      labels:
+        app: apache-ranger
+        release: {{ .Release.Name }}
+        component: apache-ranger-admin
+    spec:
+      {{- with .Values.rangerAdmin.securityContext }}
+      securityContext:
+        runAsUser: {{ .runAsUser }}
+        runAsGroup: {{ .runAsGroup }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}-admin
+          image: "{{ .Values.rangerAdmin.image.repository }}:{{ .Values.rangerAdmin.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.rangerAdmin.image.pullPolicy }}
+          volumeMounts:
+            - name: install-config
+              mountPath: {{ .Values.rangerAdmin.installPropertiesPath }}
+              subPath: install.properties
+          resources:
+            {{- toYaml .Values.rangerAdmin.resources | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.rangerAdmin.port }}
+              protocol: TCP
+          env:
+            {{- toYaml .Values.rangerAdmin.env | nindent 12 }}
+          envFrom:
+            {{- toYaml .Values.rangerAdmin.envFrom | nindent 12 }}
+          # {{- if .Values.rangerAdmin.startupProbe }}
+          # startupProbe: {{- .Values.rangerAdmin.startupProbe | toYaml | nindent 12 }}
+          # {{- end }}
+          # {{- if .Values.rangerAdmin.readinessProbe }}
+          # readinessProbe: {{- .Values.rangerAdmin.readinessProbe | toYaml | nindent 12 }}
+          # {{- end }}
+          # {{- if .Values.rangerAdmin.livenessProbe }}
+          # livenessProbe: {{- .Values.rangerAdmin.livenessProbe | toYaml | nindent 12 }}
+          # {{- end }}
+      {{- with .Values.rangerAdmin.nodeSelector }}
+      nodeSelector: 
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.rangerAdmin.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.rangerAdmin.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: install-config
+          secret:
+            secretName: {{ .Values.rangerAdmin.installPropertiesSecret }}

@@ -1,0 +1,35 @@
+{{- if .Values.ingress.rangerAuthorizationMatrix.enabled -}}
+{{- $svcPort := .Values.service.rangerAuthorizationMatrix.port -}}
+{{- $fullName := .Release.Name -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apache-ranger-authorization-matrix-ingress
+  labels:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: apache-ranger
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    helm.sh/chart: {{ .Chart.Name | quote }}
+  {{- with .Values.ingress.rangerAuthorizationMatrix.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.rangerAuthorizationMatrix.className }}
+  rules:
+    {{- range .Values.ingress.rangerAuthorizationMatrix.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $fullName }}-authorization-matrix-svc
+                port:
+                  number: {{ $svcPort }}
+          {{- end }}
+    {{- end }}
+{{- end }}

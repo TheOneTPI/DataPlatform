@@ -1,0 +1,6 @@
+apiVersion: v2
+name: apache-ranger
+description: A Helm chart for Apache Ranger Admin
+type: application
+version: 0.0.1
+appVersion: "3.0.0-SNAPSHOT"

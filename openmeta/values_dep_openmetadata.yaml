@@ -1,0 +1,124 @@
+# Default values for deps.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+#deactivate mysql using postgresql
+mysql:
+  enabled: false
+
+# OpenSearch Helm Dependency
+# you can find more details about this here https://artifacthub.io/packages/helm/opensearch-project-helm-charts/opensearch/2.12.2
+opensearch:
+  enabled: true
+  clusterName: opensearch
+  fullnameOverride: opensearch
+  nodeGroup: ""
+  imagePullPolicy: Always
+  opensearchJavaOpts: "-Xmx1g -Xms1g"
+  persistence:
+    size: 30Gi
+  protocol: http
+  config:
+    opensearch.yml: |
+      plugins.security.disabled: true
+  singleNode: true
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256M"
+    limits:
+      cpu: "2000m"
+      memory: "2048M"
+
+# Airflow configurations for helm dependency
+# you can find more details about this here https://github.com/airflow-helm/charts
+airflow:
+  enabled: true
+  airflow:
+    image:
+      repository: docker.getcollate.io/openmetadata/ingestion
+      tag: 1.5.6
+      pullPolicy: "IfNotPresent"
+    executor: "KubernetesExecutor"
+    config:
+      # This is required for OpenMetadata UI to fetch status of DAGs
+      AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.session,airflow.api.auth.backend.basic_auth"
+      # OpenMetadata Airflow Apis Plugin DAGs Configuration
+      AIRFLOW__OPENMETADATA_AIRFLOW_APIS__DAG_GENERATED_CONFIGS: "/opt/airflow/dags"
+      # OpenMetadata Airflow Secrets Manager Configuration
+      AIRFLOW__OPENMETADATA_SECRETS_MANAGER__AWS_REGION: ""
+      AIRFLOW__OPENMETADATA_SECRETS_MANAGER__AWS_ACCESS_KEY_ID: ""
+      AIRFLOW__OPENMETADATA_SECRETS_MANAGER__AWS_ACCESS_KEY: ""
+    users:
+      - username: admin
+        password: ${ADM_PASSWORD}
+        role: Admin
+        email: notaemail@noreply.org
+        firstName: Admin
+        lastName: Admin
+    usersTemplates:
+      ADM_PASSWORD:
+        kind: secret
+        name: openmeta-secret
+        key: AIRFLOW_OPENMETA_PASSWORD
+    usersUpdate: true
+  web:
+    extraVolumes:
+    - name: pod-template
+      configMap:
+        name: openmetadata-pod-template
+        defaultMode: 420
+    extraVolumeMounts:
+      - name: pod-template
+        readOnly: true
+        subPath: pod_template.yaml
+        mountPath: /opt/airflow/pod_templates/pod_template.yaml
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 10
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 10
+  postgresql:
+    enabled: false
+  workers:
+    enabled: false
+  flower:
+    enabled: false
+  redis:
+    enabled: false
+  externalDatabase:
+    type: postgres
+    host: my-postgres-openmeta-pg-openmeta
+    port: 5432
+    database: airflow_db
+    userSecret: openmeta-secret
+    userSecretKey: AIRFLOW_OPENMETA_USER
+    passwordSecret: openmeta-secret
+    passwordSecretKey: AIRFLOW_OPENMETA_PASSWORD
+  serviceAccount:
+    create: true
+    name: "airflow"
+  scheduler:
+    logCleanup:
+      enabled: false
+  dags:
+    persistence:
+      enabled: false
+      # NOTE: "" means cluster-default
+      storageClass: "local-path"
+      size: 1Gi
+      accessMode: ReadWriteMany
+  logs:
+    persistence:
+      enabled: false
+      # empty string means cluster-default
+      storageClass: "local-path"
+      accessMode: ReadWriteMany
+      size: 1Gi

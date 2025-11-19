@@ -1,0 +1,59 @@
+{{- if .Values.rangerUsersync.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apache-ranger-usersync
+  labels:
+    app: apache-ranger
+    chart: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+    component: apache-ranger-usersync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apache-ranger
+      release: {{ .Release.Name }}
+      component: apache-ranger-usersync
+  template:
+    metadata:
+      {{- if .Values.rangerUsersync.annotations }}
+      annotations:
+      {{- tpl (toYaml .Values.rangerUsersync.annotations) . | nindent 8 }}
+      {{- end }}
+      labels:
+        app: apache-ranger
+        release: {{ .Release.Name }}
+        component: apache-ranger-usersync
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}-usersync
+          image: "{{ .Values.rangerUsersync.image.repository }}:{{ .Values.rangerUsersync.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.rangerUsersync.image.pullPolicy }}
+          volumeMounts:
+            - name: install-config
+              mountPath: {{ .Values.rangerUsersync.installPropertiesPath }}
+              subPath: install.properties
+          resources:
+            {{- toYaml .Values.rangerUsersync.resources | nindent 12 }}
+          env:
+            {{- toYaml .Values.rangerUsersync.env | nindent 12 }}
+          envFrom:
+            {{- toYaml .Values.rangerUsersync.envFrom | nindent 12 }}
+      {{- with .Values.rangerUsersync.nodeSelector }}
+      nodeSelector: 
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.rangerUsersync.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.rangerUsersync.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: install-config
+          secret:
+            secretName: {{ .Values.rangerUsersync.installPropertiesSecret }}
+{{- end }}

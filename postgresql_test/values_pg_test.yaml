@@ -7,7 +7,6 @@
 global:
   ## @param global.storageClass Global StorageClass for Persistent Volume(s)
   ##
-  storageClass: "standard"
   postgresql:
     ## @param global.postgresql.auth.postgresPassword Password for the "postgres" admin user (overrides `auth.postgresPassword`)
     ## @param global.postgresql.auth.username Name for a custom user to create (overrides `auth.username`)
@@ -31,3 +30,4 @@ nameOverride: "pg-test"
 primary:
   persistence:
     size: 100Gi
+    storageClass: "local-path"

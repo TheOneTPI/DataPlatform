@@ -86,6 +86,8 @@ kubectl create namespace minio-iceberg
 kubectl create namespace postgres-test
 kubectl create namespace hms
 kubectl create namespace trino
+kubectl create namespace security-dataplatform
+kubectl create namespace data-gov
 ```
 
 ## Object storage - Minio
@@ -183,10 +185,44 @@ I create a Helm chart for HMS using the docker image and also add the environmen
 helm install -n hms my-hms ./hms/hms_helm/ -f ./hms/values_hms.yaml
 ```
 
+> :memo: If you have an error "schema failed" then you have to create on the "public" schema in postgresql all table from the version 4.0.0 for HIVE. Follow this link for the SQL : https://github.com/apache/hive/blob/master/standalone-metastore/metastore-server/src/main/sql/postgres/hive-schema-4.0.0.postgres.sql#L12C1-L12C38
+
+
+## Security with Keycloak and Openldap
+
+## OpenLdap
+I create a Helm chart for OpenLdap using the docker image of bitnami.
+
+```shell
+helm install -n security-dataplatform my-openldap ./openldap/openldap_helm/ -f ./openldap/values_openldap.yaml
+```
+
+## Keycloak
+Keycloak is an identity manager but we need to interface it with a LDAP because some tools that we use in the Open Dataplatform is not compatible AD or OpenID Connect or other protocol.
+Install it with :
+
+```shell
+helm install -n security-dataplatform my-keycloak oci://registry-1.docker.io/bitnamicharts/keycloak -f ./keycloak/values_keycloak
+```
+
+And configure it with a new realm and link it to the LDAP. You can also change some configuration like I do :
+- add a smtp for registration mail
+- add password policies for strong password
+- ...
+
 ## SQL engine - Trino
 The values file `./trino/trino_values.yaml` contains many informations like RAM for worker or JVM (be sure that JVM memory doesn't exceed the Worker/Coordinator memory) and also connections (named catalogs in trino). 
 
 ```shell
+# add repo
+helm repo add trino https://trinodb.github.io/charts
+
+# secret
+kubectl apply --namespace trino -f ./trino/trino_secret.yaml
+
+kubectl create secret tls -n trino my-trino-tls-secret --key ca.key --cert ca.crt
+
+# deploy
 helm install -n trino my-trino-cluster trino/trino -f ./trino/trino_values.yaml
 ```
 
@@ -207,3 +243,83 @@ Results :
 | Request ID | Summary | PostgreSQL | PostgreSQL over Trino | Iceberg over Trino |
 | ---------- | ------- | ---------- | --------------------- | ----------------- |
 | 001 | Agregate 150M rows of sales by year | 2 min 25s | 1 min 38s | 4s |
+
+
+## Apache ranger
+
+Install prerequisites for Apache Ranger (PostgreSQL & Opensearch)
+```shell
+
+# POSTGRESQL
+# secret
+kubectl apply --namespace security-dataplatform -f ./ranger/postgresql_ranger_secret.yaml
+# deploy
+helm install -n security-dataplatform my-postgres-ranger oci://registry-1.docker.io/bitnamicharts/postgresql -f ./ranger/values_pg_ranger.yaml
+
+#OPENSEARCH
+helm install -n security-dataplatform opensearch opensearch/opensearch -f ./ranger/values_opensearch.yaml
+
+```
+
+Build the docker image for Apache Ranger
+```shell
+# docker build
+docker build ./ranger/create_image/ -t tpipino/ranger-admin:2.5.0-SNAPSHOT
+
+
+kubectl create secret generic -n security-dataplatform ranger-secret --from-file=./ranger/install_prop/ranger/install.properties
+kubectl create secret generic -n security-dataplatform ranger-usersync-secret --from-file=./ranger/install_prop/ranger_usersync/install.properties
+
+helm install -n security-dataplatform my-ranger ./ranger/ranger_helm/ -f ./ranger/values_ranger.yaml
+
+kubectl exec -it -n security-dataplatform apache-ranger-admin-59d55855c-zdjtq -- /bin/bash
+
+
+
+```
+
+## Data Governance with Open-Metadata
+
+
+```shell
+# add repo
+helm repo add open-metadata https://helm.open-metadata.org/
+
+# secret
+kubectl apply --namespace data-gov -f ./openmeta/openmeta_secret.yaml
+
+# deploy postgresql metadata for openmeta & airflow
+helm install -n data-gov my-postgres-openmeta oci://registry-1.docker.io/bitnamicharts/postgresql -f ./openmeta/values_pg_openmeta.yaml
+
+# deploy dependancies for openmeta (opensearch & airflow)
+helm install -n data-gov openmetadata-dependencies open-metadata/openmetadata-dependencies -f ./openmeta/values_dep_openmetadata.yaml
+
+# deploy
+helm install -n data-gov openmetadata open-metadata/openmetadata -f ./openmeta/values_openmetadata.yaml
+
+
+
+
+helm repo add opendatadiscovery https://opendatadiscovery.github.io/charts
+
+# secret
+kubectl apply --namespace data-gov -f ./opendatadiscovery/odd_secret.yaml
+kubectl create secret tls -n data-gov my-odd-tls-secret --key ca.key --cert ca.crt
+
+helm install -n data-gov my-postgres-odd oci://registry-1.docker.io/bitnamicharts/postgresql -f ./opendatadiscovery/values_pg_odd.yaml
+
+helm install -n data-gov my-odd-platform opendatadiscovery/odd-platform -f ./opendatadiscovery/values_odd_platform.yaml
+
+helm install -n data-gov my-odd-collector opendatadiscovery/odd-collector -f ./opendatadiscovery/values_odd_collector.yaml
+
+
+kubectl create secret -n data-gov generic mysql-secrets --from-literal=mysql-root-password=datahub --from-literal=mysql-password=datahub
+kubectl create secret -n data-gov generic neo4j-secrets --from-literal=neo4j-password=datahub --from-literal=NEO4J_AUTH=neo4j/datahub
+
+helm repo add datahub https://helm.datahubproject.io/
+
+helm install -n data-gov prerequisites datahub/datahub-prerequisites
+helm install -n data-gov datahub datahub/datahub
+
+
+```

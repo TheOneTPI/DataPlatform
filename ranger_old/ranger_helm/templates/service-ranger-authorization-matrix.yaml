@@ -1,0 +1,29 @@
+{{- if .Values.rangerAuthorizationMatrix.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-authorization-matrix-svc
+  labels:
+    app: apache-ranger
+    chart: {{ .Chart.Name }}
+    release: {{ .Release.Name }}
+  annotations:
+{{ toYaml .Values.service.rangerAuthorizationMatrix.annotations | indent 4 }}
+spec:
+  type: {{ .Values.service.rangerAuthorizationMatrix.type }}
+  ports:
+    - port: {{ .Values.service.rangerAuthorizationMatrix.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    {{- range $key, $value := .Values.rangerAuthorizationMatrix.additionalExposedPorts }}
+    - port: {{ $value.servicePort }}
+      name: {{ $value.name }}
+      targetPort: {{ $value.port }}
+      protocol: {{ $value.protocol }}
+    {{- end }}
+  selector:
+    app: apache-ranger
+    release: {{ .Release.Name }}
+    component: apache-ranger-authorization-matrix
+{{- end }}

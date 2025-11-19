@@ -1,68 +1,53 @@
-FROM openjdk:23-slim
+FROM openjdk:8-slim
 
-# see https://hadoop.apache.org/releases.html
-ARG HADOOP_VERSION=3.3.6
-# see https://downloads.apache.org/hive/
-ARG HIVE_METASTORE_VERSION=3.0.0
-# see https://jdbc.postgresql.org/download.html#current
-ARG POSTGRES_CONNECTOR_VERSION=42.7.3
+ARG HADOOP_VERSION=3.2.0
+ARG HIVE_HOME=/opt/hive-metastore
+ARG HIVE_VERSION=3.1.2
 
-# Set necessary environment variables.
 ENV HADOOP_HOME="/opt/hadoop"
-ENV PATH="/opt/spark/bin:/opt/hadoop/bin:${PATH}"
-ENV DATABASE_DRIVER=org.postgresql.Driver
-ENV DATABASE_TYPE=postgres
-ENV DATABASE_TYPE_JDBC=postgresql
-ENV DATABASE_PORT=5432
 
-WORKDIR /app
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN apt-get update && apt-get install -y curl --no-install-recommends \
+	&& rm -rf /var/lib/apt/lists/*
 
-# hadolint ignore=DL3008
-RUN \
-  echo "Install OS dependencies" && \
-    build_deps="curl" && \
-    apt-get update -y && \
-    apt-get install -y $build_deps net-tools --no-install-recommends
-RUN \
-  echo "Download and extract the Hadoop binary package" && \
-    curl https://archive.apache.org/dist/hadoop/core/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz \
-    | tar xvz -C /opt/ && \
-    ln -s /opt/hadoop-$HADOOP_VERSION /opt/hadoop && \
-    rm -r /opt/hadoop/share/doc
-RUN \
-  echo "Add S3a jars to the classpath using this hack" && \
-    ln -s /opt/hadoop/share/hadoop/tools/lib/hadoop-aws* /opt/hadoop/share/hadoop/common/lib/ && \
+RUN curl https://archive.apache.org/dist/hadoop/core/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz \
+	| tar xvz -C /opt/  \
+	&& ln -s /opt/hadoop-$HADOOP_VERSION /opt/hadoop \
+	&& rm -r /opt/hadoop/share/doc
+
+RUN ln -s /opt/hadoop/share/hadoop/tools/lib/hadoop-aws* /opt/hadoop/share/hadoop/common/lib/ && \
     ln -s /opt/hadoop/share/hadoop/tools/lib/aws-java-sdk* /opt/hadoop/share/hadoop/common/lib/
-RUN \
-  echo "Download and install the standalone metastore binary" && \
-    curl https://downloads.apache.org/hive/hive-standalone-metastore-$HIVE_METASTORE_VERSION/hive-standalone-metastore-$HIVE_METASTORE_VERSION-bin.tar.gz \
-    | tar xvz -C /opt/ && \
-    ln -s /opt/apache-hive-metastore-$HIVE_METASTORE_VERSION-bin /opt/hive-metastore
-RUN \
-  echo "Fix 'java.lang.NoSuchMethodError: com.google.common.base.Preconditions.checkArgument'" && \
-  echo "Keep this until this lands: https://issues.apache.org/jira/browse/HIVE-22915" && \
-    rm /opt/apache-hive-metastore-$HIVE_METASTORE_VERSION-bin/lib/guava-19.0.jar && \
-    cp /opt/hadoop-$HADOOP_VERSION/share/hadoop/hdfs/lib/guava-27.0-jre.jar /opt/apache-hive-metastore-$HIVE_METASTORE_VERSION-bin/lib/
-RUN \
-  echo "Download and install the database connector" && \
-    curl -L https://jdbc.postgresql.org/download/postgresql-$POSTGRES_CONNECTOR_VERSION.jar --output /opt/postgresql-$POSTGRES_CONNECTOR_VERSION.jar && \
-    ln -s /opt/postgresql-$POSTGRES_CONNECTOR_VERSION.jar /opt/hadoop/share/hadoop/common/lib/ && \
-    ln -s /opt/postgresql-$POSTGRES_CONNECTOR_VERSION.jar /opt/hive-metastore/lib/
-RUN \
-  echo "Purge build artifacts" && \
-    apt-get purge -y --auto-remove $build_deps && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
 
-COPY run.sh run.sh
+RUN curl https://repo1.maven.org/maven2/org/apache/hive/hive-standalone-metastore/${HIVE_VERSION}/hive-standalone-metastore-${HIVE_VERSION}-bin.tar.gz \
+	| tar xvz -C /opt/ \
+	&& ln -s /opt/apache-hive-metastore-${HIVE_VERSION}-bin ${HIVE_HOME}
 
-EXPOSE 9083
+RUN curl -o ${HIVE_HOME}/lib/postgresql-42.3.3.jar -L https://jdbc.postgresql.org/download/postgresql-42.3.3.jar
+RUN curl -o ${HIVE_HOME}/lib/hive-exec-3.1.3.jar -L https://repo1.maven.org/maven2/org/apache/hive/hive-exec/3.1.3/hive-exec-3.1.3.jar
 
-RUN groupadd -r hive --gid=1000 && \
-    useradd -r -g hive --uid=1000 -d /opt/hive-metastore hive && \
-    chown hive:hive -R /opt/hive-metastore && \
-    chown hive:hive ./run.sh && chmod +x ./run.sh
+ARG LOG4J_VERSION=2.17.2
+ARG LOG4J_LOCATION="https://repo1.maven.org/maven2/org/apache/logging/log4j"
+RUN rm -f ${HADOOP_HOME}/share/hadoop/common/lib/slf4j-log4j12* && \
+    rm -f ${HADOOP_HOME}/share/hadoop/common/lib/log4j* && \
+    rm -f ${HADOOP_HOME}/share/hadoop/hdfs/lib/log4j* && \
+    rm -f ${HADOOP_HOME}/share/hadoop/yarn/hadoop-yarn-applications-catalog-webapp-3.3.1.war && \
+    rm -f ${HIVE_HOME}/lib/log4j-* && \
+    curl -o ${HIVE_HOME}/lib/log4j-1.2-api-${LOG4J_VERSION}.jar ${LOG4J_LOCATION}/log4j-1.2-api/${LOG4J_VERSION}/log4j-1.2-api-${LOG4J_VERSION}.jar  && \
+    curl -o ${HIVE_HOME}/lib/log4j-api-${LOG4J_VERSION}.jar ${LOG4J_LOCATION}/log4j-api/${LOG4J_VERSION}/log4j-api-${LOG4J_VERSION}.jar && \
+    curl -o ${HIVE_HOME}/lib/log4j-core-${LOG4J_VERSION}.jar ${LOG4J_LOCATION}/log4j-core/${LOG4J_VERSION}/log4j-core-${LOG4J_VERSION}.jar && \
+    curl -o ${HIVE_HOME}/lib/log4j-slf4j-impl-${LOG4J_VERSION}.jar ${LOG4J_LOCATION}/log4j-slf4j-impl/${LOG4J_VERSION}/log4j-slf4j-impl-${LOG4J_VERSION}.jar && \
+    rm ${HIVE_HOME}/conf/metastore-site.xml && \
+    rm ${HIVE_HOME}/conf/metastore-site.xml.template
 
-CMD [ "./run.sh" ]
-HEALTHCHECK CMD [ "sh", "-c", "netstat -ln | grep 9083" ]
+COPY conf/metastore-log4j2.properties ${HIVE_HOME}/conf/metastore-log4j2.properties
+
+RUN mkdir -p /var/lib/hive /.beeline ${HOME}/.beeline
+
+COPY scripts/entrypoint.sh ${HIVE_HOME}/entrypoint.sh
+COPY scripts/set-hive-site.sh ${HIVE_HOME}/set-hive-site.sh
+COPY scripts/set-hive-properties.sh ${HIVE_HOME}/set-hive-properties.sh
+
+RUN chmod +x ${HIVE_HOME}/*.sh
+
+WORKDIR /opt/hive-metastore
+
+ENTRYPOINT ["sh", "-c", "/opt/hive-metastore/set-hive-site.sh && /opt/hive-metastore/set-hive-properties.sh && /opt/hive-metastore/entrypoint.sh"]
